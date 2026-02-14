@@ -4,6 +4,7 @@ typedef enum {
   TOK_IDENTIFIER,
   TOK_INTEGER,
   TOK_FLOAT,
+  TOK_EOF,
   TOK_UNKNOWN,
 } TokenType;
 

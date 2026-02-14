@@ -36,6 +36,7 @@ char peek(TokenizerContext *ctxt) { return ctxt->input_buffer[ctxt->curr_idx]; }
 char advance(TokenizerContext *ctxt) {
   char ch = peek(ctxt);
   ctxt->curr_idx++;
+  ctxt->column++;
   return ch;
 }
 
@@ -47,8 +48,8 @@ Token newToken(TokenizerContext *ctxt, TokenType type) {
   Token result;
   result.token_length = ctxt->curr_idx - ctxt->start_idx;
   result.token_line = ctxt->line;
-  result.token_text = ctxt->input_buffer + ctxt->curr_idx;
-  result.token_type = TOK_IDENTIFIER;
+  result.token_text = ctxt->input_buffer + ctxt->start_idx;
+  result.token_type = type;
   return result;
 }
 
@@ -61,36 +62,36 @@ Token lexToken(TokenizerContext *ctxt) {
       if (curr_char == '\n') {
         ctxt->line++;
         ctxt->column = 0;
-      } else {
-        ctxt->column++;
       }
+      continue;
     }
-    if (isalpha(curr_char)) {
-      while (isalnum(peek(ctxt))) {
+    if (isalpha(curr_char) || curr_char == '_') {
+      while (isalnum(peek(ctxt)) || peek(ctxt) == '_') {
         advance(ctxt);
       }
       return newToken(ctxt, TOK_IDENTIFIER);
     }
     if (isdigit(curr_char)) {
       while (isdigit(peek(ctxt))) {
-        curr_char = advance(ctxt);
+        advance(ctxt);
       }
-      if (isspace(lookahead(ctxt)))
-        return newToken(ctxt, TOK_INTEGER);
       if (peek(ctxt) == '.') {
-        curr_char = advance(ctxt);
+        advance(ctxt);
         while (isdigit(peek(ctxt))) {
-          curr_char = advance(ctxt);
+          advance(ctxt);
         }
         return newToken(ctxt, TOK_FLOAT);
       }
-      return newToken(ctxt, TOK_UNKNOWN);
+      return newToken(ctxt, TOK_INTEGER);
     }
+    return newToken(ctxt, TOK_UNKNOWN);
   }
+  return newToken(ctxt, TOK_EOF);
 }
 
 TokenizationResult tokenizeFile(FILE *input_file) {
   TokenizationResult result;
+  result.success = TOK_SUCCESS;
   if (!input_file) {
     result.success = TOK_FAILURE;
     return result;
@@ -101,6 +102,10 @@ TokenizationResult tokenizeFile(FILE *input_file) {
   initTokenizerCtxt(ctxt, bufferizeFile(input_file));
 
   Token candidate;
+  while ((candidate = lexToken(ctxt)).token_type != TOK_EOF) {
+    printf("Found token '%.*s' of length '%d'\n", candidate.token_length,
+           candidate.token_text, candidate.token_length);
+  }
 
   return result;
 }
