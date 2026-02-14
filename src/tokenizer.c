@@ -43,26 +43,20 @@ char lookahead(TokenizerContext *ctxt) {
   return ctxt->input_buffer[ctxt->curr_idx + 1];
 }
 
-int tokenizeFile(FILE *input_file) {
-  if (!input_file)
-    return -1;
-  TokenizerContext context;
-  TokenizerContext *ctxt = &context;
-  initTokenizerCtxt(ctxt, bufferizeFile(input_file));
+Token newToken(TokenizerContext *ctxt, TokenType type) {
+  Token result;
+  result.token_length = ctxt->curr_idx - ctxt->start_idx;
+  result.token_line = ctxt->line;
+  result.token_text = ctxt->input_buffer + ctxt->curr_idx;
+  result.token_type = TOK_IDENTIFIER;
+  return result;
+}
 
+Token lexToken(TokenizerContext *ctxt) {
   while (peek(ctxt) != '\0') {
     ctxt->start_idx = ctxt->curr_idx;
     char curr_char = advance(ctxt);
-    if (isalpha(curr_char)) {
-      while (isalpha(peek(ctxt))) {
-        advance(ctxt);
-      }
 
-      long tok_len = ctxt->curr_idx - ctxt->start_idx;
-
-      printf("Found token '%.*s' with length %ld\n", (int)tok_len,
-             ctxt->input_buffer + ctxt->start_idx, tok_len);
-    }
     if (isspace(curr_char)) {
       if (curr_char == '\n') {
         ctxt->line++;
@@ -71,6 +65,42 @@ int tokenizeFile(FILE *input_file) {
         ctxt->column++;
       }
     }
+    if (isalpha(curr_char)) {
+      while (isalnum(peek(ctxt))) {
+        advance(ctxt);
+      }
+      return newToken(ctxt, TOK_IDENTIFIER);
+    }
+    if (isdigit(curr_char)) {
+      while (isdigit(peek(ctxt))) {
+        curr_char = advance(ctxt);
+      }
+      if (isspace(lookahead(ctxt)))
+        return newToken(ctxt, TOK_INTEGER);
+      if (peek(ctxt) == '.') {
+        curr_char = advance(ctxt);
+        while (isdigit(peek(ctxt))) {
+          curr_char = advance(ctxt);
+        }
+        return newToken(ctxt, TOK_FLOAT);
+      }
+      return newToken(ctxt, TOK_UNKNOWN);
+    }
   }
-  return 0;
+}
+
+TokenizationResult tokenizeFile(FILE *input_file) {
+  TokenizationResult result;
+  if (!input_file) {
+    result.success = TOK_FAILURE;
+    return result;
+  }
+
+  TokenizerContext context;
+  TokenizerContext *ctxt = &context;
+  initTokenizerCtxt(ctxt, bufferizeFile(input_file));
+
+  Token candidate;
+
+  return result;
 }

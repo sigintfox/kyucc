@@ -1,16 +1,19 @@
 #include <stdio.h>
 
-enum TokenType {
+typedef enum {
   TOK_IDENTIFIER,
+  TOK_INTEGER,
+  TOK_FLOAT,
   TOK_UNKNOWN,
-};
+} TokenType;
 
-enum TokenizeSuccess { TOK_FAILURE = 0, TOK_SUCCESS = 1 };
+typedef enum { TOK_FAILURE = 0, TOK_SUCCESS = 1 } TokenizeSuccess;
 
 typedef struct {
   char *token_text;
+  int token_length;
   int token_line;
-  enum TokenType token_type;
+  TokenType token_type;
 } Token;
 
 typedef struct {
@@ -22,14 +25,15 @@ typedef struct {
 } TokenizerContext;
 
 typedef struct {
-  enum TokenizeSuccess success;
+  TokenizeSuccess success;
   Token *tokens[];
 } TokenizationResult;
 
-int tokenizeFile(FILE *file);
+TokenizationResult tokenizeFile(FILE *file);
 char *bufferizeFile(FILE *file);
 TokenizerContext *initTokenizerCtxt(TokenizerContext *ctxt, char *input_buffer);
-Token *createToken(TokenizerContext *ctxt);
+Token newToken(TokenizerContext *ctxt, TokenType type);
+Token lexToken(TokenizerContext *ctxt);
 char advance(TokenizerContext *ctxt);
 char peek(TokenizerContext *ctxt);
 char lookahead(TokenizerContext *ctxt);
